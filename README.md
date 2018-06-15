@@ -1,14 +1,99 @@
 # geoStat
 **Analytics with Linked Data**
 
-Goal: Return a sorted list of the "Wettest" MSAs (metropolitan statistical areas) in May, 2015.  
+/play dangerzone
+
+**Goal:** Return a sorted list of the "Wettest" MSAs (metropolitan statistical areas) in May, 2015.  
 
 * The **population wetness** of an MSA is calculated as the **MSA population** times the **amount of rain** received.  
 * Assume that all people remain inside between the hours of 12 AM and 7 AM local time and so rainfall during these hours does not count. 
 
+**Ensure:**
+- [x] capture project to gitHub :octocat:
+- [ ] program correctness
+- [ ] code style 
+- [ ] documentation quality
+- [ ] packaging quality
+- [ ] performance / efficiency
+- [ ] portability (Docker, Vagrant, etc.)
+- [ ] security
+- [ ] bonus points will be given for visualizations of the data (charts, graphs, etc.)
+
+## Resources
+http://www.ncdc.noaa.gov/data-access/quick-links#loc-clim
+http://www.ncdc.noaa.gov/orders/qclcd/QCLCD201505.zip
+http://www.ncdc.noaa.gov/homr/file/wbanmasterlist.psv.zip;jsessionid=A76E5C1AC28E5985D6EFC66A156DF6BE
+https://www.census.gov/data/tables/2016/demo/popest/total-metro-and-micro-statistical-areas.html
+
+
+## Approach
+
+* Prepare population data for each MSA on May 2015
+* For each MSA, determine the _contained_ set of WBAN reporter stations
+  * Currently searching for this set of data.  Worse case, have to do a point-in-polygon test using longitude/latitude coords versus MSA polygon whose vertexes are longitude/latitude projections.
+* Prepare _timezone aware_ rainfall data for each MSA on May 2015, less the _localized_ exclusion window (12 AM - 7 AM)
+  * If this data doesn't already exist, have to do a weighted average of WBAN station recordings (and interpolate missing values)
+
+```java
+    
+    // pseudo schema / code (hack)
+    
+    class MSA {
+       string name;
+       int    populationSize = 0; // on May 2015 
+       float  populationWetness = 0.0;
+       
+       // TODO: might need this data in lieu of existing MSA:WBAN membership info
+       Polygon< Pair<float latitude, float longitude> > perimeter;
+       
+       // int timeZoneOffset; ... Even if a MSA spans multiple timezones, timeZoneOffset not relevant 
+       //                         because we record data indexed to local timezone [0..23]
+       
+       class WBAN {
+          string name;
+          string parent = this.name;
+          float  latitude;
+          float  longitude;
+          
+          // May 2015 rain observations (local timezone)
+          // Note: -1 == missing observation
+          float hourlyRainObservation[24]; // 0 == 12 to 12:59 AM, 1 == 1 AM to 1:59 AM, ... 23 == 23 to 23:59 AM
+          
+          return float observedRainfall( startHour, endHour ) {
+             assert startHour >= 0;
+             assert endHour < 24;
+             assert startHour <= endHour;
+             
+             hourlyRainObservation = map( dataRepairFunctor, hourlyRainObservation, startHour, endHour);
+             
+             return map( sumFunctor, hourlyRainObservation, startHour, endHour );
+          }
+       } // class WBAN
+       
+       // List of WBANs inside this MSA
+       List<WBANinfo> wban;
+    } // class MSA
+```
+
+``` Java
+    const int startHour = 7;
+    const int endHour = 23;
+    for each msa in MSA {
+        msaSumRainfall = 0.0;
+        for each wban in msa.WBAN {
+           msaSumRainfall += wban.observedRainfall(startHour, endHour);
+        }
+        
+        // initially just average the WBANs observations inside the MSA
+        float observedRainfallAvg = msaSumRainFall / msa.WBAN.size();
+        
+        msa.populationWetness = observedRainfallAvg * msa.populationSize;
+     } 
+``` 
+
 ## Example Metropolitan Statistical Area plot (Feb 2013)
 
-![Screenshot](https://www2.census.gov/geo/maps/metroarea/us_wall/Feb2013/cbsa_us_0213_large.gif)
+![MSA Example Plot from 2013](https://www2.census.gov/geo/maps/metroarea/us_wall/Feb2013/cbsa_us_0213_large.gif)
 
 **Data Sources**
 
@@ -40,7 +125,7 @@ WBAN|WMO|CallSign|ClimateDivisionCode|ClimateDivisionStateCode|ClimateDivisionSt
 |91367||04|91|3915||MH|AILINGLAPALAP|7.26667|168.83333|6|||12
 
 * observations:
-** GOOD data: links WBAN to state, timezone, clean lat/longitude 
+  * GOOD data: links WBAN to state, timezone, clean lat/longitude 
 
 * QCLCD201505/201505Hourly.txt : ($ cut -d',' -f1-5,9,23,39,40,41,42 --output-delimiter='|' QCLCD201505/201505hourly.txt | head -n 10)
 
@@ -57,7 +142,7 @@ WBAN|Date|Time|StationType|SkyCondition|WeatherType|RelativeHumidity|RecordType|
 00102|20150501|0801|0|CLR| | 78|AA| | |
 
 * observations:
-** no precip data, no timezone, only "SkyCondition" seems useful
+  * no precip data, no timezone, only "SkyCondition" seems useful
 
 
 * wbanmasterlist.psv :
@@ -70,5 +155,5 @@ WBAN|Date|Time|StationType|SkyCondition|WeatherType|RelativeHumidity|RecordType|
 "001"|"00102"|"BOB BARKER MEMORIAL AIRPORT"|"AK"|"NORTHWEST ARCTIC BOROUGH"|"US"|"BOB BARKER MEMORIAL AIRPORT"|"IAN"|"AWOS"|"November 2013"|"01-JUL-58"|"ADDED TO REPOSITORY USING ISD, AIRNAV.COM, FAA PUBLICATIONS AS SOURCE FOR AWOS/AWSS/METAR LOAD PROJECT.  NCDC RECEIVING DATA ON GTS FOR THESE STATIONS. WBANS WERE AUTO-GENERATED STARTING AT 00100."|"66.983, -160.433"||"168 FEET"||||
 
 * observations:
-** don't extract lat / longitude data from this .. non-uniform format
+  * don't extract lat / longitude data from this .. non-uniform format
 
