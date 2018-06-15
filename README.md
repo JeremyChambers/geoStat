@@ -1,8 +1,6 @@
 # geoStat
 **Analytics with Linked Data**
 
-/play dangerzone
-
 **Goal:** Return a sorted list of the "Wettest" MSAs (metropolitan statistical areas) in May, 2015.  
 
 * The **population wetness** of an MSA is calculated as the **MSA population** times the **amount of rain** received.  
@@ -72,13 +70,20 @@ https://www.census.gov/data/tables/2016/demo/popest/total-metro-and-micro-statis
        
        // List of WBANs inside this MSA
        List<WBANinfo> wban;
+       
     } // class MSA
 ```
 
 ``` Java
+
+    // load all US MSA info and their contained WBAN observational data for May 2015
+    msaList = loadMSAs();
+
+    // update population wetness scores for each MSA
+    //
     const int startHour = 7;
     const int endHour = 23;
-    for each msa in MSA {
+    for each msa in msaList {
         msaSumRainfall = 0.0;
         for each wban in msa.WBAN {
            msaSumRainfall += wban.observedRainfall(startHour, endHour);
@@ -89,6 +94,14 @@ https://www.census.gov/data/tables/2016/demo/popest/total-metro-and-micro-statis
         
         msa.populationWetness = observedRainfallAvg * msa.populationSize;
      } 
+     
+     // Sort : could be done with iterable over a sortable derived class
+     //
+     boolean ascending = false;     
+     sortMSAbyWettestPopulation( msaList, ascending ); 
+     
+     // then dump list
+     
 ``` 
 
 ## Example Metropolitan Statistical Area plot (Feb 2013)
