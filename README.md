@@ -1,5 +1,5 @@
 # geoStat
-**Analytics with Linked Data**
+**Geo/Meteorological Analytics with Linked Data**
 
 **Goal:** Return a sorted list of the "Wettest" MSAs (metropolitan statistical areas) in May, 2015.  
 
@@ -23,14 +23,40 @@ http://www.ncdc.noaa.gov/orders/qclcd/QCLCD201505.zip
 http://www.ncdc.noaa.gov/homr/file/wbanmasterlist.psv.zip;jsessionid=A76E5C1AC28E5985D6EFC66A156DF6BE
 https://www.census.gov/data/tables/2016/demo/popest/total-metro-and-micro-statistical-areas.html
 
+## Example Metropolitan Statistical Area plot (Feb 2013)
+
+![MSA Example Plot from 2013](https://www2.census.gov/geo/maps/metroarea/us_wall/Feb2013/cbsa_us_0213_large.gif)
+
+### Definition of MSA
+The Federal Office of Management and Budget (OMB) designates and defines.  
+
+[Census.gov : See Chapt 13, Metropolitan Areas: MA, MSA, PMSA, CMSA, NECMA](https://www2.census.gov/geo/pdfs/reference/GARM/Ch13GARM.pdf)
+
+* [Feb 2013 OMB Bulletin](https://www.whitehouse.gov/sites/whitehouse.gov/files/omb/bulletins/2013/b-13-01.pdf) MSA delineation update (*381 MSA*s for USA)
+  * this MSA delineation _should be_ the one in effect for our historical frame of reference (May 2015).  Not sure if currently available historical data from census.gov reflects the temporally evolving MSA delineations or not.
+  * Delineation _files_: https://www.census.gov/geographies/reference-files/time-series/demo/metro-micro/delineation-files.html
+    * Feb 2013 : Core based statistical areas (CBSAs), metropolitan divisions, and combined statistical areas (CSAs).  Includes FIPS codes for State and County.  County is the linkable element to the NOAA stations with curated rain data
+    * 2015 : KML file (i.e., for Google Earth viz of MSA's) https://www.census.gov/geo/maps-data/data/kml/kml_msa.html
+* [Jul 2015 OMB Bulletin](https://www.whitehouse.gov/sites/whitehouse.gov/files/omb/bulletins/2015/b-15-01.pdf) MSA delineation update (*382 MSA*s for USA)
+* [Aug 2017 OMB bulletin](https://www.whitehouse.gov/sites/whitehouse.gov/files/omb/bulletins/2017/b-17-01.pdf) MSA delineation update (*383 MSA*s for USA)
+
+#### Definition of FIPS
+FIPS are unique IDs for _counties_ and county equivalents in the United States, certain U.S. possessions, and certain freely associated states.
+U.S. Census Bureau, while keeping the name (FIPS), replaced the FIPS 6-4 codes with [INCITS 31](https://standards.incits.org/apps/group_public/project/details.php?project_id=204) codes after the 2010 Census, with the Census bureau assigning new codes as needed for their internal use during the transition. -- https://en.wikipedia.org/wiki/FIPS_county_code
+
+* [May, 2015 County Changes](https://www.census.gov/geo/reference/county-changes.html)
 
 ## Approach
 
+* Research concepts such as MSA and how to link it with rainfall data from potentially multiple NOAA sources within each MSA
 * Prepare population data for each MSA on May 2015
 * For each MSA, determine the _contained_ set of WBAN reporter stations
-  * Currently searching for this set of data.  Worse case, have to do a point-in-polygon test using longitude/latitude coords versus MSA polygon whose vertexes are longitude/latitude projections.
+  * Currently searching for this linked set of data.  Worse case, have to do a point-in-polygon test using longitude/latitude coords versus MSA polygon whose vertexes are longitude/latitude projections.
+  * [Cran R Project that already did this work](https://cran.r-project.org/web/packages/countyweather/vignettes/countyweather.html)
 * Prepare _timezone aware_ rainfall data for each MSA on May 2015, less the _localized_ exclusion window (12 AM - 7 AM)
   * If this data doesn't already exist, have to do a weighted average of WBAN station recordings (and interpolate missing values)
+
+## Pseudo code
 
 ```java
     
@@ -104,14 +130,9 @@ https://www.census.gov/data/tables/2016/demo/popest/total-metro-and-micro-statis
      
 ``` 
 
-## Example Metropolitan Statistical Area plot (Feb 2013)
-
-![MSA Example Plot from 2013](https://www2.census.gov/geo/maps/metroarea/us_wall/Feb2013/cbsa_us_0213_large.gif)
-
 **Data Sources**
 
 * MSA : 
-
 
 * QCLCD201505/201505station.txt ($ head -n 10, tail -n 10)
 
@@ -129,13 +150,13 @@ WBAN|WMO|CallSign|ClimateDivisionCode|ClimateDivisionStateCode|ClimateDivisionSt
 96401||IEC||50||CHULITNA|AK|CHULITNA|62.82639|-149.90667|1400|1350|0|-9
 96402||JVM|05|50|8915|SUTTON|AK|JONESVILLE MINE AIRPORT|61.7138|-148.9088|550|870|0|-9
 96404|70292|63D0|08|50||TOK|AK|TOK 70 SE|62.737|-141.2083|2000|||-9
-|91355||04|91|||FM|KOSRAE|5.35|162.95|7|||12
-|91425||04|91|4590||FM|NUKUORO|3.85|155.01667|8|||11
-|91369||04|91|4304||MH|JALUIT|5.91667|169.65|6|||12
-|91339||04|91|4419||FM|LUKUNOCH|5.51667|153.81667|5|||10
-|91371||04|91|4903||MH|WOTJE|9.46667|170.25|6|||12
-|91258||04|91|4895||MH|UTIRIK|11.23333|169.85|6|||12
-|91367||04|91|3915||MH|AILINGLAPALAP|7.26667|168.83333|6|||12
+-|91355||04|91|||FM|KOSRAE|5.35|162.95|7|||12
+-|91425||04|91|4590||FM|NUKUORO|3.85|155.01667|8|||11
+-|91369||04|91|4304||MH|JALUIT|5.91667|169.65|6|||12
+-|91339||04|91|4419||FM|LUKUNOCH|5.51667|153.81667|5|||10
+-|91371||04|91|4903||MH|WOTJE|9.46667|170.25|6|||12
+-|91258||04|91|4895||MH|UTIRIK|11.23333|169.85|6|||12
+-|91367||04|91|3915||MH|AILINGLAPALAP|7.26667|168.83333|6|||12
 
 * observations:
   * GOOD data: links WBAN to state, timezone, clean lat/longitude 
